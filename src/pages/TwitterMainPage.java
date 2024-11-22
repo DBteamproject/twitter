@@ -1,4 +1,4 @@
-package twittermainpage;
+package pages;
 
 import repository.PostRepository;
 
@@ -9,8 +9,6 @@ import java.awt.event.ActionListener;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
 
 public class TwitterMainPage extends JFrame {
     private JPanel tweetsPanel;
