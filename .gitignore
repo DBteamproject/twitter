@@ -29,3 +29,4 @@ bin/
 .DS_Store
 
 .idea/
+src/resources/post_photos
