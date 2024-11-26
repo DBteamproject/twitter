@@ -126,15 +126,12 @@ public class TweetWriteDialogHandler {
                 Connection con = DatabaseConnection.getConnection();
                 PostRepository postRepository = new PostRepository();
                 try {
-                    postRepository.writePost(tweetContent, con, userId);
-                    for (File image : selectedImages) {
-//                        postRepository.addImage(image, con, userId);
-                    }
+                    postRepository.writePost(tweetContent, selectedImages, con, userId);
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
 
-                mainPage.showPage(new ProfilePage(mainPage, userId));
+                mainPage.showPage(new ProfilePage(mainPage, userId, userId));
                 tweetDialog.dispose();
                 DatabaseConnection.closeConnection(con);
             } else {

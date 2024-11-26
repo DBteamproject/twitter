@@ -41,7 +41,7 @@ public class TwitterMainPage extends JFrame {
         homeButton.addActionListener(e -> showPage(new MainPage(this, userId))); // 홈 버튼 클릭 시 MainPage로 이동
         searchButton.addActionListener(e -> showPage(new SearchPage(this, userId))); // 검색 페이지
         notificationsButtonBottom.addActionListener(e -> showPage(new NotificationPage(this, userId))); // 알림 페이지
-        myProfileButton.addActionListener(e -> showPage(new ProfilePage(this, userId))); // 프로필 페이지
+        myProfileButton.addActionListener(e -> showPage(new ProfilePage(this, userId, userId))); // 프로필 페이지
 
         bottomPanel.add(homeButton);
         bottomPanel.add(searchButton);

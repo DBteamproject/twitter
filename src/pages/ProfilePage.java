@@ -1,24 +1,40 @@
 package pages;
 
+import config.DatabaseConnection;
 import dialog.TweetDesignPanel;
+import dto.MemberDto;
+import dto.PostDto;
+import repository.MemberRepository;
+import repository.PostReadRepository;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 
 public class ProfilePage extends JPanel {
     private JPanel tweetsPanel;
     private JScrollPane scrollPane;
-    private List<String[]> tweetData;
-    private int tweetIndex = 0; // 현재 로드된 트윗의 인덱스
+    private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
+    private boolean tweetScrollStatus = true;
 
-    public ProfilePage(TwitterMainPage mainPage, String userId) {
+    public ProfilePage(TwitterMainPage mainPage, String searchUserId, String userId) {
+        // DB에서 데이터 가져오기
+        Connection con = DatabaseConnection.getConnection();
+        MemberRepository memberRepository = new MemberRepository();
+        MemberDto memberInfo = memberRepository.getMemberInfo(con, searchUserId);
+        DatabaseConnection.closeConnection(con);
+
+        // 레이아웃 설정
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // 상단: 프로필 정보
+        // 상단: 프로필 정보 패널
         JPanel profileInfoPanel = new JPanel();
         profileInfoPanel.setLayout(new BorderLayout());
         profileInfoPanel.setBackground(Color.LIGHT_GRAY);
@@ -26,7 +42,8 @@ public class ProfilePage extends JPanel {
 
         // 프로필 이미지
         JLabel profileImageLabel = new JLabel();
-        ImageIcon profileIcon = new ImageIcon("src/resources/profile.png"); // 프로필 이미지 경로
+        String profileImagePath = (memberInfo.getProfileImage() != null && !memberInfo.getProfileImage().isEmpty()) ? memberInfo.getProfileImage() : "src/resources/profile.png";
+        ImageIcon profileIcon = new ImageIcon(profileImagePath);
         Image scaledProfileImage = profileIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
         profileImageLabel.setIcon(new ImageIcon(scaledProfileImage));
 
@@ -35,35 +52,61 @@ public class ProfilePage extends JPanel {
         profileTextPanel.setLayout(new BoxLayout(profileTextPanel, BoxLayout.Y_AXIS));
         profileTextPanel.setBackground(Color.LIGHT_GRAY);
 
-        JLabel usernameLabel = new JLabel("<html><h2>Example User</h2></html>");
-        JLabel handleLabel = new JLabel("<html><span style='color:gray;'>@" + userId + "</span></html>");
-        JLabel bioLabel = new JLabel("<html>Just a simple bio about myself...</html>");
-        JLabel followStatsLabel = new JLabel("<html>Followers: <b>123</b> | Following: <b>456</b></html>");
-        JLabel joinedDateLabel = new JLabel("<html>Joined: <b>January 2021</b></html>");
+        JPanel usernamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // 가로로 배치, 간격 없음
+        usernamePanel.setBackground(Color.LIGHT_GRAY);
+        JLabel usernameLabel = new JLabel("<html><h2>" + memberInfo.getUserName() + "</h2></html>");
+        JButton followButton = new JButton("Follow");
+        followButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Follow button clicked"); // 팔로우 기능 구현 필요
+            }
+        });
+        usernamePanel.add(usernameLabel);
+        usernamePanel.add(followButton);
 
-        profileTextPanel.add(usernameLabel);
-        profileTextPanel.add(handleLabel);
-        profileTextPanel.add(Box.createVerticalStrut(5));
-        profileTextPanel.add(bioLabel);
-        profileTextPanel.add(Box.createVerticalStrut(5));
-        profileTextPanel.add(followStatsLabel);
-        profileTextPanel.add(Box.createVerticalStrut(5));
-        profileTextPanel.add(joinedDateLabel);
+        JLabel handleLabel = new JLabel("<html><span style='color:gray;'>@" + memberInfo.getUserId() + "</span></html>");
+        JLabel bioLabel = new JLabel("<html>" + memberInfo.getIntroduce() + "</html>");
+        JLabel followStatsLabel = new JLabel("<html>Followers: <b>" + memberInfo.getFollowersCount() + "명</b> | Following: <b>" + memberInfo.getFollowingCount() + "명</b></html>");
+        LocalDateTime createdAt = memberInfo.getCreatedAt();
+        String formattedDate = (createdAt != null) ? createdAt.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")) : "Unknown";
+        JLabel joinedDateLabel = new JLabel("<html>Joined: <b>" + formattedDate + "</b></html>");
 
-        // 프로필 정보 패널 구성
+        JPanel textInfoPanel = new JPanel();
+        textInfoPanel.setLayout(new GridBagLayout());
+        textInfoPanel.setBackground(Color.LIGHT_GRAY);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridwidth = GridBagConstraints.REMAINDER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        textInfoPanel.add(usernamePanel, gbc);
+        textInfoPanel.add(handleLabel, gbc);
+        textInfoPanel.add(bioLabel, gbc);
+        textInfoPanel.add(followStatsLabel, gbc);
+        textInfoPanel.add(joinedDateLabel, gbc);
+
+        profileTextPanel.add(textInfoPanel);
+
+        JButton followerListButton = new JButton("Follower List");
+        JButton followingListButton = new JButton("Following List");
+
+        JPanel listButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        listButtonPanel.setBackground(Color.LIGHT_GRAY);
+        listButtonPanel.add(followerListButton);
+        listButtonPanel.add(followingListButton);
+
         profileInfoPanel.add(profileImageLabel, BorderLayout.WEST);
-        profileInfoPanel.add(profileTextPanel, BorderLayout.CENTER);
+        profileInfoPanel.add(textInfoPanel, BorderLayout.CENTER);
+        profileInfoPanel.add(listButtonPanel, BorderLayout.SOUTH);
 
         // 하단: 트윗 목록
         tweetsPanel = new JPanel();
         tweetsPanel.setLayout(new BoxLayout(tweetsPanel, BoxLayout.Y_AXIS));
         tweetsPanel.setBackground(Color.WHITE);
 
-        // 트윗 데이터 초기화
-        initializeTweetData();
-
         // 초기 트윗 10개 로드
-        loadMoreTweets(10);
+        loadMoreTweets(searchUserId, userId);
 
         // 스크롤 가능한 트윗 패널
         scrollPane = new JScrollPane(tweetsPanel);
@@ -79,7 +122,7 @@ public class ProfilePage extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
                 if (scrollBar.getValue() + scrollBar.getVisibleAmount() >= scrollBar.getMaximum()) {
-                    loadMoreTweets(10);
+                    loadMoreTweets(searchUserId, userId);
                 }
             }
         });
@@ -89,29 +132,26 @@ public class ProfilePage extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void initializeTweetData() {
-        tweetData = new ArrayList<>();
-        for (int i = 1; i <= 50; i++) {
-            tweetData.add(new String[]{"User " + i, "@user" + i, "This is tweet number " + i,
-                    String.valueOf(i * 2), String.valueOf(i), String.valueOf(i * 3), "src/resources/profile.png", "12/03"});
-        }
-    }
 
-    private void loadMoreTweets(int count) {
-        TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
-        for (int i = 0; i < count && tweetIndex < tweetData.size(); i++) {
-            String[] tweet = tweetData.get(tweetIndex++);
-            String[] imagePaths = {
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png"
-            };
-            tweetsPanel.add(tweetDesignPanel.base(tweet[0], tweet[1], tweet[2],
-                    Integer.parseInt(tweet[3]),
-                    Integer.parseInt(tweet[4]), Integer.parseInt(tweet[5]), tweet[6], imagePaths, tweet[7]));
+    private void loadMoreTweets(String searchUserId, String userId) {
+        if(tweetScrollStatus) {
+            Connection con = DatabaseConnection.getConnection();
+            PostReadRepository postReadRepository = new PostReadRepository();
+            List<PostDto> userPosts = postReadRepository.getUserPosts(con, tweetScrollNum, searchUserId, userId);
+            DatabaseConnection.closeConnection(con);
+
+            if (userPosts.isEmpty()) {
+                System.out.println("posts loaded is empty. so stopped loading tweets.");
+                tweetScrollStatus = false;
+            }
+            tweetScrollNum++;
+
+            TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
+            for (PostDto userPost : userPosts) {
+                tweetsPanel.add(tweetDesignPanel.base(userPost, userId));
+            }
+            tweetsPanel.revalidate();
         }
-        tweetsPanel.revalidate();
     }
 }
 
