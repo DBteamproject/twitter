@@ -1,13 +1,9 @@
-package dialog;
-
-import components.CommentSection;
-import components.LikeButton;
-import components.NotificationPanel;
+package panel;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class TweetDesignPanel {
+public class CommentPanel {
     public JPanel base(String username, String handle, String tweetText,
                        int likes, int retweets, int comments, String profilePath,
                        String[] images, String date) {

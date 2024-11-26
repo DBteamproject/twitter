@@ -1,7 +1,6 @@
-package components;
+package panel;
 
 import javax.swing.*;
-import java.awt.event.ActionListener;
 
 public class LikeButton extends JPanel {
     private int likeCount;
