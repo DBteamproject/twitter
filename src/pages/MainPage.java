@@ -1,24 +1,26 @@
 package pages;
 
+import config.DatabaseConnection;
 import dialog.TweetDesignPanel;
+import dto.PostDto;
+import repository.PostReadRepository;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
+import java.sql.Connection;
 import java.util.List;
+
 
 public class MainPage extends JPanel {
     private JPanel tweetsPanel;
     private JScrollPane scrollPane;
     private List<String[]> tweetData;
-    private int tweetIndex = 0; // 현재 로드된 트윗의 인덱스
+    private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
+    private boolean tweetScrollStatus = true;
 
     public MainPage(TwitterMainPage mainPage, String userId) {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
-
-        // 트윗 데이터 초기화
-        initializeTweetData();
 
         // 트윗 패널
         tweetsPanel = new JPanel();
@@ -26,7 +28,7 @@ public class MainPage extends JPanel {
         tweetsPanel.setBackground(Color.WHITE);
 
         // 초기 트윗 10개 로드
-        loadMoreTweets(10);
+        loadMoreTweets(userId);
 
         // 스크롤 가능한 트윗 패널
         scrollPane = new JScrollPane(tweetsPanel);
@@ -42,7 +44,7 @@ public class MainPage extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
                 if (scrollBar.getValue() + scrollBar.getVisibleAmount() >= scrollBar.getMaximum()) {
-                    loadMoreTweets(10);
+                    loadMoreTweets(userId);
                 }
             }
         });
@@ -51,29 +53,25 @@ public class MainPage extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void initializeTweetData() {
-        tweetData = new ArrayList<>();
-        for (int i = 1; i <= 50; i++) {
-            tweetData.add(new String[]{"User " + i, "@user" + i, "This is tweet number " + i,
-                    String.valueOf(i * 2), String.valueOf(i), String.valueOf(i * 3), "src/resources/profile.png", "12/03"});
-        }
-    }
 
-    private void loadMoreTweets(int count) {
-        TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
-        for (int i = 0; i < count && tweetIndex < tweetData.size(); i++) {
-            String[] tweet = tweetData.get(tweetIndex++);
-            String[] imagePaths = {
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png",
-                    "src/resources/school_test.png"
-            };
-            tweetsPanel.add(tweetDesignPanel.base(tweet[0], tweet[1], tweet[2],
-                    Integer.parseInt(tweet[3]),
-                    Integer.parseInt(tweet[4]), Integer.parseInt(tweet[5]), tweet[6], imagePaths, tweet[7]));
+    private void loadMoreTweets(String userId) {
+        if(tweetScrollStatus) {
+            Connection con = DatabaseConnection.getConnection();
+            PostReadRepository postReadRepository = new PostReadRepository();
+            List<PostDto> userPosts = postReadRepository.getAllPosts(con, tweetScrollNum, userId);
+            DatabaseConnection.closeConnection(con);
+
+            if (userPosts.isEmpty()) {
+                System.out.println("posts loaded is empty. so stopped loading tweets.");
+                tweetScrollStatus = false;
+            }
+            tweetScrollNum++;
+
+            TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
+            for (PostDto userPost : userPosts) {
+                tweetsPanel.add(tweetDesignPanel.base(userPost, userId));
+            }
+            tweetsPanel.revalidate();
         }
-        tweetsPanel.revalidate();
     }
 }
-
