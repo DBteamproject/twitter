@@ -110,6 +110,7 @@ public class ProfilePage extends JPanel {
 
         // 스크롤 가능한 트윗 패널
         scrollPane = new JScrollPane(tweetsPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         // 스크롤 속도 높이기
