@@ -6,20 +6,21 @@ import dialog.TweetDesignPanel;
 import dto.CommentDto;
 import dto.MemberDto;
 import dto.PostDto;
-import repository.MemberRepository;
-import repository.PostReadRepository;
+import repository.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 
 public class TweetDetailPage extends JPanel {
     private JPanel tweetsPanel;
+    private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
+    private boolean tweetScrollStatus = true;
 
     public TweetDetailPage(TwitterMainPage mainPage, String postId, String userId) {
         // DB에서 데이터 가져오기 (댓글 데이터 포함)
@@ -27,13 +28,9 @@ public class TweetDetailPage extends JPanel {
         PostReadRepository postReadRepository = new PostReadRepository();
         PostDto postDto = postReadRepository.getSinglePost(con, userId, postId);
 
-        MemberRepository memberRepository = new MemberRepository();
-        MemberDto memberInfo = memberRepository.getMemberInfo(con, userId);
+        PostRepository postRepository = new PostRepository();
+        postRepository.updateViews(con, postId);
         DatabaseConnection.closeConnection(con);
-
-        // 임시 데이터 추가
-        CommentDto commentDto = new CommentDto("abc", "sdf sdfsdfs", 2, false, memberInfo, LocalDateTime.now());
-        List<CommentDto> comments = Arrays.asList(commentDto, commentDto);
 
         // 레이아웃 설정
         setLayout(new BorderLayout());
@@ -57,7 +54,7 @@ public class TweetDetailPage extends JPanel {
         // 댓글 제목 패널 (왼쪽 정렬)
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         titlePanel.setBackground(Color.WHITE);
-        JLabel commentsTitle = new JLabel("댓글 (" + comments.size() + "개)");
+        JLabel commentsTitle = new JLabel("Comment (" + postDto.getNumComments() + "개)");
         commentsTitle.setFont(new Font("Arial", Font.BOLD, 16));
         commentsTitle.setPreferredSize(new Dimension(150, 30)); // 고정된 크기 설정
         titlePanel.add(commentsTitle);
@@ -78,25 +75,28 @@ public class TweetDetailPage extends JPanel {
         buttonPanel.setBackground(Color.WHITE);
         buttonPanel.setMaximumSize(new Dimension(400, 40)); // 버튼 패널의 최대 크기 설정
 
-        JButton postCommentButton = new JButton("댓글쓰기");
+        JButton postCommentButton = new JButton("Write Comment");
         postCommentButton.setFont(new Font("Arial", Font.PLAIN, 12));
         postCommentButton.setForeground(Color.WHITE);
         postCommentButton.setBackground(Color.BLUE);
         postCommentButton.setFocusPainted(false);
         postCommentButton.setBorderPainted(false);
         postCommentButton.setOpaque(true);
-        postCommentButton.setPreferredSize(new Dimension(100, 30)); // 댓글쓰기 버튼 크기 고정
+        postCommentButton.setPreferredSize(new Dimension(200, 30)); // 댓글쓰기 버튼 크기 고정
         buttonPanel.add(postCommentButton);
 
         postCommentButton.addActionListener(e -> {
             String newCommentContent = commentInputField.getText().trim();
             if (!newCommentContent.isEmpty()) {
-                // 새로운 댓글 추가 로직
-                System.out.println("New comment: " + newCommentContent);
-                // 예시로 댓글을 추가하는 코드. 실제로는 데이터베이스에 저장 후 다시 로드하는 방식이어야 함
-                CommentDto newComment = new CommentDto(userId, newCommentContent, 0, false, memberInfo, LocalDateTime.now());
-                loadComment(mainPage, newComment, userId);
-                commentInputField.setText("");  // 입력창 초기화
+                Connection con2 = DatabaseConnection.getConnection();
+                CommentRepository commentRepository = new CommentRepository();
+                try {
+                    commentRepository.writeComment(con2, postId, newCommentContent, userId);
+                    mainPage.showPage(new TweetDetailPage(mainPage, postId, userId));
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+                DatabaseConnection.closeConnection(con2);
             }
         });
 
@@ -113,12 +113,27 @@ public class TweetDetailPage extends JPanel {
 
 
         // 댓글 로드
-        loadComments(mainPage, comments, userId);
+        loadComments(mainPage, postId, userId);
 
         JScrollPane scrollPane = new JScrollPane(tweetsPanel);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(null);
+
+        // 스크롤 속도 높이기
+        JScrollBar verticalScrollBar = scrollPane.getVerticalScrollBar();
+        verticalScrollBar.setUnitIncrement(10);
+        verticalScrollBar.setBlockIncrement(80);
+
+        // 스크롤 이벤트로 무한 스크롤 기능 추가
+        scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+                if (scrollBar.getValue() + scrollBar.getVisibleAmount() >= scrollBar.getMaximum()) {
+                    loadComments(mainPage, postId, userId);
+                }
+            }
+        });
 
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -132,21 +147,26 @@ public class TweetDetailPage extends JPanel {
         tweetsPanel.revalidate();
     }
 
-    private void loadComments(TwitterMainPage mainPage, List<CommentDto> comments, String userId) {
-        CommentDesignPanel commentDesignPanel = new CommentDesignPanel();
-        for (CommentDto comment : comments) {
-            JPanel commentPanel = commentDesignPanel.base(mainPage, comment, userId);
-            tweetsPanel.add(commentPanel);
-            tweetsPanel.add(Box.createVerticalStrut(10)); // 각 댓글 사이의 간격
-        }
-        tweetsPanel.revalidate();
-    }
+    private void loadComments(TwitterMainPage mainPage, String postId, String userId) {
+        if(tweetScrollStatus) {
+            Connection con = DatabaseConnection.getConnection();
+            CommentReadRepository commentReadRepository = new CommentReadRepository();
+            List<CommentDto> comments = commentReadRepository.getCommentsWithPost(con, postId, tweetScrollNum, userId);
+            DatabaseConnection.closeConnection(con);
 
-    private void loadComment(TwitterMainPage mainPage, CommentDto comment, String userId) {
-        CommentDesignPanel commentDesignPanel = new CommentDesignPanel();
-        JPanel commentPanel = commentDesignPanel.base(mainPage, comment, userId);
-        tweetsPanel.add(commentPanel);
-        tweetsPanel.add(Box.createVerticalStrut(10)); // 각 댓글 사이의 간격
-        tweetsPanel.revalidate();
+            if (comments.isEmpty()) {
+                System.out.println("comments loaded is empty. so stopped loading comments.");
+                tweetScrollStatus = false;
+            }
+            tweetScrollNum++;
+
+            CommentDesignPanel commentDesignPanel = new CommentDesignPanel();
+            for (CommentDto comment : comments) {
+                JPanel commentPanel = commentDesignPanel.base(mainPage, comment, postId, userId);
+                tweetsPanel.add(commentPanel);
+                tweetsPanel.add(Box.createVerticalStrut(10)); // 각 댓글 사이의 간격
+            }
+            tweetsPanel.revalidate();
+        }
     }
 }
