@@ -14,7 +14,6 @@ import java.util.List;
 public class MainPage extends JPanel {
     private JPanel tweetsPanel;
     private JScrollPane scrollPane;
-    private List<String[]> tweetData;
     private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
     private boolean tweetScrollStatus = true;
 
@@ -28,7 +27,7 @@ public class MainPage extends JPanel {
         tweetsPanel.setBackground(Color.WHITE);
 
         // 초기 트윗 10개 로드
-        loadMoreTweets(userId);
+        loadMoreTweets(mainPage, userId);
 
         // 스크롤 가능한 트윗 패널
         scrollPane = new JScrollPane(tweetsPanel);
@@ -44,7 +43,7 @@ public class MainPage extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
                 if (scrollBar.getValue() + scrollBar.getVisibleAmount() >= scrollBar.getMaximum()) {
-                    loadMoreTweets(userId);
+                    loadMoreTweets(mainPage, userId);
                 }
             }
         });
@@ -54,7 +53,7 @@ public class MainPage extends JPanel {
     }
 
 
-    private void loadMoreTweets(String userId) {
+    private void loadMoreTweets(TwitterMainPage mainPage, String userId) {
         if(tweetScrollStatus) {
             Connection con = DatabaseConnection.getConnection();
             PostReadRepository postReadRepository = new PostReadRepository();
@@ -69,7 +68,9 @@ public class MainPage extends JPanel {
 
             TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
             for (PostDto userPost : userPosts) {
-                tweetsPanel.add(tweetDesignPanel.base(userPost, userId));
+                JPanel tweetPanel = tweetDesignPanel.base(mainPage, userPost, userId);
+                tweetPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, tweetPanel.getPreferredSize().height));
+                tweetsPanel.add(tweetPanel);
             }
             tweetsPanel.revalidate();
         }

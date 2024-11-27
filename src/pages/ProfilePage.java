@@ -106,7 +106,7 @@ public class ProfilePage extends JPanel {
         tweetsPanel.setBackground(Color.WHITE);
 
         // 초기 트윗 10개 로드
-        loadMoreTweets(searchUserId, userId);
+        loadMoreTweets(mainPage, searchUserId, userId);
 
         // 스크롤 가능한 트윗 패널
         scrollPane = new JScrollPane(tweetsPanel);
@@ -122,7 +122,7 @@ public class ProfilePage extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
                 if (scrollBar.getValue() + scrollBar.getVisibleAmount() >= scrollBar.getMaximum()) {
-                    loadMoreTweets(searchUserId, userId);
+                    loadMoreTweets(mainPage, searchUserId, userId);
                 }
             }
         });
@@ -133,7 +133,7 @@ public class ProfilePage extends JPanel {
     }
 
 
-    private void loadMoreTweets(String searchUserId, String userId) {
+    private void loadMoreTweets(TwitterMainPage mainPage, String searchUserId, String userId) {
         if(tweetScrollStatus) {
             Connection con = DatabaseConnection.getConnection();
             PostReadRepository postReadRepository = new PostReadRepository();
@@ -148,7 +148,9 @@ public class ProfilePage extends JPanel {
 
             TweetDesignPanel tweetDesignPanel = new TweetDesignPanel();
             for (PostDto userPost : userPosts) {
-                tweetsPanel.add(tweetDesignPanel.base(userPost, userId));
+                JPanel tweetPanel = tweetDesignPanel.base(mainPage, userPost, userId);
+                tweetPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, tweetPanel.getPreferredSize().height));
+                tweetsPanel.add(tweetPanel);
             }
             tweetsPanel.revalidate();
         }
