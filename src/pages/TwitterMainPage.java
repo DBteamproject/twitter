@@ -9,10 +9,10 @@ public class TwitterMainPage extends JFrame {
     private JPanel topPanel; // 상단 메뉴 패널
     private JPanel bottomPanel; // 하단 메뉴 패널
     private JButton tweetButton; // 트윗 작성 버튼 (항상 떠 있음)
-    private String userId = "1"; // 현재 접속한 유저의 id;
+//    private String userId = "1"; // 현재 접속한 유저의 id;
 
 
-    public TwitterMainPage() {
+    public TwitterMainPage(String userId) {
         setTitle("Twitter Main Page");
         setSize(400, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -25,6 +25,10 @@ public class TwitterMainPage extends JFrame {
 
         JButton twitterLogoButton = createIconButton("Twitter (DB 9조)", 20, Color.WHITE);
         JButton logoutButton = createIconButton("Logout", 20, Color.GRAY);
+        logoutButton.addActionListener(e -> {
+            dispose(); // 현재 메인 프레임 닫기
+            new LoginPage(); // 로그인 페이지 다시 열기
+        });
 
         topPanel.add(twitterLogoButton, BorderLayout.CENTER);
         topPanel.add(logoutButton, BorderLayout.EAST);
@@ -143,6 +147,12 @@ public class TwitterMainPage extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(TwitterMainPage::new);
+//        SwingUtilities.invokeLater(TwitterMainPage::new);
+        SwingUtilities.invokeLater(() -> {
+            LoginPage loginPage = new LoginPage();
+            loginPage.setLoginListener(userId -> {
+                new TwitterMainPage(userId);
+            });
+        });
     }
 }
