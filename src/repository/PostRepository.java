@@ -107,6 +107,24 @@ public class PostRepository {
     }
 
 
+    public void updateViews(Connection con, String postId) {
+        String sql = "UPDATE posts SET num_of_views = num_of_views + 1 WHERE post_id = ?";
+
+        try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, postId);
+            int rowsUpdated = pstmt.executeUpdate();
+
+            if (rowsUpdated > 0) {
+                System.out.println("The view count has been successfully updated.");
+            } else {
+                System.out.println("Unable to update the view count. Please check the postId.");
+            }
+        } catch (SQLException e) {
+            System.err.println("An error occurred while updating the view count: " + e.getMessage());
+        }
+    }
+
+
     public void deletePost(Connection con, String postId, String userId) throws SQLException {
         // 트랜잭션 시작
         con.setAutoCommit(false); // 자동 커밋 비활성화

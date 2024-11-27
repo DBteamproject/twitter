@@ -1,7 +1,6 @@
 package dialog;
 
 import config.DatabaseConnection;
-import pages.MainPage;
 import pages.ProfilePage;
 import pages.TwitterMainPage;
 import repository.PostRepository;
