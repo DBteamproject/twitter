@@ -4,12 +4,17 @@ import config.DatabaseConnection;
 import dto.PostDto;
 import dto.PostLikeDto;
 import dto.PostPhotoDto;
+import pages.ProfilePage;
+import pages.TweetDetailPage;
+import pages.TwitterMainPage;
 import repository.PostLikeRepository;
 import repository.PostRepository;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -18,7 +23,7 @@ import java.util.List;
 
 
 public class TweetDesignPanel {
-    public JPanel base(PostDto postDto, String userId) {
+    public JPanel base(TwitterMainPage mainPage, PostDto postDto, String userId) {
         JPanel tweetPanel = new JPanel();
         tweetPanel.setLayout(new BorderLayout());
         tweetPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
@@ -35,6 +40,13 @@ public class TweetDesignPanel {
         }
         Image scaledImage = icon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
         profileImageLabel.setIcon(new ImageIcon(scaledImage));
+
+        profileImageLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                mainPage.showPage(new ProfilePage(mainPage, postDto.getMember().getUserId(), userId));
+            }
+        });
 
         // 사용자 정보 (이름, 핸들)
         JLabel userInfo = new JLabel("<html><b>" + postDto.getMember().getUserName() + "</b> <span style='color:gray;'>@" + postDto.getMember().getUserId() + "</span></html>");
@@ -107,7 +119,7 @@ public class TweetDesignPanel {
         reactionPanel.add(createReactionLabel("Views", postDto.getNumViews())); // 조회수
 
         // 삭제 버튼 추가
-        JButton deleteButton = new JButton("Delete");
+        JButton deleteButton = new JButton("Delete >");
         deleteButton.setFont(new Font("Arial", Font.PLAIN, 12));
         deleteButton.setForeground(Color.RED);
         deleteButton.setContentAreaFilled(false);
@@ -144,6 +156,19 @@ public class TweetDesignPanel {
         if (postDto.getMember().getUserId().equals(userId)) {
             reactionPanel.add(deleteButton);  // 삭제 버튼을 조회수 옆에 추가
         }
+
+        // Detail 버튼 추가
+        JButton detailButton = new JButton("Detail >");
+        detailButton.setFont(new Font("Arial", Font.PLAIN, 12));
+        detailButton.setForeground(Color.BLUE);
+        detailButton.setContentAreaFilled(false);
+        detailButton.setBorderPainted(false);
+        detailButton.setFocusPainted(false);
+        detailButton.addActionListener(e -> {
+            // 삭제 확인을 요청하는 대화 상자 표시
+            mainPage.showPage(new TweetDetailPage(mainPage, postDto.getPostId(), userId));
+        });
+        reactionPanel.add(detailButton);
 
         // 프로필 이미지와 내용을 결합
         JPanel leftPanel = new JPanel(new BorderLayout());

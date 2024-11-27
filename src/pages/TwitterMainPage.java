@@ -11,6 +11,7 @@ public class TwitterMainPage extends JFrame {
     private JButton tweetButton; // 트윗 작성 버튼 (항상 떠 있음)
     private String userId = "1"; // 현재 접속한 유저의 id;
 
+
     public TwitterMainPage() {
         setTitle("Twitter Main Page");
         setSize(400, 800);
@@ -20,9 +21,9 @@ public class TwitterMainPage extends JFrame {
 
         // 상단 메뉴 패널
         topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(Color.WHITE);
+        topPanel.setBackground(Color.BLUE);
 
-        JButton twitterLogoButton = createIconButton("Twitter (DB 9조)", 20, Color.BLUE);
+        JButton twitterLogoButton = createIconButton("Twitter (DB 9조)", 20, Color.WHITE);
         JButton logoutButton = createIconButton("Logout", 20, Color.GRAY);
 
         topPanel.add(twitterLogoButton, BorderLayout.CENTER);
