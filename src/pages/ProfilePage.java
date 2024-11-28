@@ -1,9 +1,11 @@
 package pages;
 
 import config.DatabaseConnection;
+import dialog.FollowUserListDialog;
 import dialog.TweetDesignPanel;
 import dto.MemberDto;
 import dto.PostDto;
+import listener.UserEditActionListener;
 import repository.MemberRepository;
 import repository.PostReadRepository;
 
@@ -11,7 +13,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.lang.reflect.Member;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -88,13 +92,7 @@ public class ProfilePage extends JPanel {
 
         profileTextPanel.add(textInfoPanel);
 
-        JButton followerListButton = new JButton("Follower List");
-        JButton followingListButton = new JButton("Following List");
-
-        JPanel listButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        listButtonPanel.setBackground(Color.LIGHT_GRAY);
-        listButtonPanel.add(followerListButton);
-        listButtonPanel.add(followingListButton);
+        JPanel listButtonPanel = getButtonJPanel(searchUserId, userId, memberInfo, mainPage);
 
         profileInfoPanel.add(profileImageLabel, BorderLayout.WEST);
         profileInfoPanel.add(textInfoPanel, BorderLayout.CENTER);
@@ -131,6 +129,104 @@ public class ProfilePage extends JPanel {
         // 구성 요소 추가
         add(profileInfoPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+    }
+
+    private static JPanel getButtonJPanel(String searchUserId, String userId, MemberDto memberDto, TwitterMainPage mainPage) {
+        JPanel listButtonPanel = new JPanel();
+        listButtonPanel.setLayout(new BoxLayout(listButtonPanel, BoxLayout.Y_AXIS));
+        listButtonPanel.setBackground(Color.LIGHT_GRAY);
+        listButtonPanel.setOpaque(true);
+
+        // 첫 번째 행 버튼들
+        JPanel firstRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        firstRow.setBackground(Color.LIGHT_GRAY);
+        JButton followerListButton = new JButton("Follower List");
+        JButton followingListButton = new JButton("Following List");
+        firstRow.add(followerListButton);
+        firstRow.add(followingListButton);
+
+        // 두 번째 행 버튼들
+        JPanel secondRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        secondRow.setBackground(Color.LIGHT_GRAY);
+        JButton userEditButton = new JButton("User Edit");
+        JButton userDeleteButton = new JButton("Delete Account");
+        secondRow.add(userEditButton);
+        secondRow.add(userDeleteButton);
+
+        // 패널에 두 행 추가
+        listButtonPanel.add(firstRow);
+        if (searchUserId.equals(userId)) {
+            listButtonPanel.add(secondRow);
+        }
+
+        followerListButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 예시 팔로워 목록
+                List<MemberDto> followerList = List.of(memberDto, memberDto);
+                FollowUserListDialog dialog = new FollowUserListDialog(
+                        (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
+                        "Follower List",
+                        followerList,
+                        mainPage,
+                        userId
+                );
+                dialog.setVisible(true);
+            }
+        });
+
+        followingListButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 예시 팔로잉 목록
+                List<MemberDto> followerList = List.of(memberDto, memberDto);
+                FollowUserListDialog dialog = new FollowUserListDialog(
+                        (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
+                        "Following List",
+                        followerList,
+                        mainPage,
+                        userId
+                );
+                dialog.setVisible(true);
+            }
+        });
+
+        userEditButton.addActionListener(new UserEditActionListener(
+                (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
+                memberDto,
+                mainPage,
+                userId
+        ));
+        userDeleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 확인 다이얼로그 띄우기
+                int response = JOptionPane.showConfirmDialog(
+                        listButtonPanel, // 다이얼로그를 띄울 부모 컴포넌트
+                        "Do you want to delete my account?", // 메시지 내용
+                        "Delete", // 다이얼로그 제목
+                        JOptionPane.YES_NO_OPTION, // YES/NO 버튼을 추가
+                        JOptionPane.WARNING_MESSAGE // 경고 아이콘 사용
+                );
+
+                // 사용자가 YES를 클릭했을 경우
+                if (response == JOptionPane.YES_OPTION) {
+                    // 실제 삭제 작업을 수행하는 함수 호출
+                    Connection con = DatabaseConnection.getConnection();
+                    MemberRepository memberRepository = new MemberRepository();
+                    try {
+                        memberRepository.deleteMember(con, userId);
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                    DatabaseConnection.closeConnection(con);
+                    JOptionPane.showMessageDialog(listButtonPanel, "Member deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    mainPage.logoutAction();
+                }
+            }
+        });
+
+        return listButtonPanel;
     }
 
 
