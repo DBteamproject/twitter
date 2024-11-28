@@ -21,7 +21,7 @@ public class LoginPage extends JFrame {
         setSize(300, 200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new GridLayout(3, 2));
+        setLayout(new GridLayout(4, 2)); // 버튼 추가로 그리드 행 수 변경
 
         JLabel userIdLabel = new JLabel("User ID:");
         userIdField = new JTextField();
@@ -44,6 +44,7 @@ public class LoginPage extends JFrame {
                         loginListener.onLoginSuccess(userId);
                     }
                     dispose(); // 로그인 성공 시 현재 창 닫기
+                    new TwitterMainPage(userId).setVisible(true);
                 } else {
                     // 로그인 실패 시 경고 팝업 띄우기
                     JOptionPane.showMessageDialog(LoginPage.this,
@@ -54,12 +55,21 @@ public class LoginPage extends JFrame {
             }
         });
 
+        JButton signUpButton = new JButton("Sign Up");
+        signUpButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new SignUpPage(); // Sign Up 페이지로 이동
+                dispose(); // 현재 로그인 페이지 닫기
+            }
+        });
+
         add(userIdLabel);
         add(userIdField);
         add(passwordLabel);
         add(passwordField);
-        add(new JLabel()); // 빈 칸
         add(loginButton);
+        add(signUpButton); // Sign Up 버튼 추가
 
         setVisible(true);
     }

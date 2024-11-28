@@ -23,13 +23,12 @@ public class TwitterMainPage extends JFrame {
         topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(Color.BLUE);
 
+        JButton userIdButton = createIconButton("@" + userId, 17, Color.LIGHT_GRAY);
         JButton twitterLogoButton = createIconButton("Twitter (DB 9조)", 20, Color.WHITE);
-        JButton logoutButton = createIconButton("Logout", 20, Color.GRAY);
-        logoutButton.addActionListener(e -> {
-            dispose(); // 현재 메인 프레임 닫기
-            new LoginPage(); // 로그인 페이지 다시 열기
-        });
+        JButton logoutButton = createIconButton("Logout", 17, Color.LIGHT_GRAY);
+        logoutButton.addActionListener(e -> logoutAction());
 
+        topPanel.add(userIdButton, BorderLayout.WEST);
         topPanel.add(twitterLogoButton, BorderLayout.CENTER);
         topPanel.add(logoutButton, BorderLayout.EAST);
 
@@ -107,6 +106,15 @@ public class TwitterMainPage extends JFrame {
         layeredPane.add(tweetButton, JLayeredPane.POPUP_LAYER);
 
         setVisible(true);
+    }
+
+    public void logoutAction() {
+        dispose(); // 현재 메인 프레임을 완전히 닫기
+        LoginPage loginPage = new LoginPage(); // 새로운 로그인 페이지 열기
+        loginPage.setLoginListener(newUserId -> {
+            // 로그인이 완료되면 새로운 TwitterMainPage를 생성
+            new TwitterMainPage(newUserId);
+        });
     }
 
     public void showPage(Component component) {
