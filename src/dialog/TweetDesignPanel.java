@@ -133,16 +133,17 @@ public class TweetDesignPanel {
                 PostRepository postRepository = new PostRepository();
                 try {
                     postRepository.deletePost(con, postDto.getPostId(), userId);
+                    mainPage.showPage(new ProfilePage(mainPage, userId, userId));
 
-                    Container parent = tweetPanel.getParent();
-                    if (parent != null) {
-                        parent.remove(tweetPanel);
-                        parent.revalidate();
-                        parent.repaint();
-                        System.out.println("Tweet deleted!");
-                    } else {
-                        System.err.println("Parent container is null. Unable to delete tweet.");
-                    }
+//                    Container parent = tweetPanel.getParent();
+//                    if (parent != null) {
+//                        parent.remove(tweetPanel);
+//                        parent.revalidate();
+//                        parent.repaint();
+//                        System.out.println("Tweet deleted!");
+//                    } else {
+//                        System.err.println("Parent container is null. Unable to delete tweet.");
+//                    }
                 } catch (SQLException ex) {
                     System.out.println(ex.getMessage());
                 }
