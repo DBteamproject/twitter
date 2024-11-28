@@ -4,7 +4,6 @@ import config.DatabaseConnection;
 import dialog.CommentDesignPanel;
 import dialog.TweetDesignPanel;
 import dto.CommentDto;
-import dto.MemberDto;
 import dto.PostDto;
 import repository.*;
 
@@ -13,7 +12,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.List;
 
 
