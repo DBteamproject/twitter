@@ -111,13 +111,7 @@ public class TwitterMainPage extends JFrame {
     public void logoutAction() {
         SwingUtilities.invokeLater(() -> {
             dispose(); // 현재 메인 프레임을 완전히 닫기
-
-            // 새로운 로그인 페이지 열기
-            LoginPage loginPage = new LoginPage();
-            loginPage.setLoginListener(newUserId -> {
-                // 로그인이 완료되면 새로운 TwitterMainPage를 생성
-                SwingUtilities.invokeLater(() -> new TwitterMainPage(newUserId));
-            });
+            new LoginPage().setVisible(true);
         });
     }
 
@@ -160,11 +154,6 @@ public class TwitterMainPage extends JFrame {
 
     public static void main(String[] args) {
 //        SwingUtilities.invokeLater(TwitterMainPage::new);
-        SwingUtilities.invokeLater(() -> {
-            LoginPage loginPage = new LoginPage();
-            loginPage.setLoginListener(userId -> {
-                new TwitterMainPage(userId);
-            });
-        });
+        SwingUtilities.invokeLater(LoginPage::new);
     }
 }

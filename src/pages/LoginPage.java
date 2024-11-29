@@ -14,7 +14,6 @@ import java.sql.SQLException;
 public class LoginPage extends JFrame {
     private JTextField userIdField;
     private JPasswordField passwordField;
-    private LoginListener loginListener;
 
     public LoginPage() {
         setTitle("Login Page");
@@ -69,11 +68,8 @@ public class LoginPage extends JFrame {
                 // 로그인 검증
                 boolean isLoginValid = validateLogin(userId, password);
                 if (isLoginValid) {
-                    if (loginListener != null) {
-                        loginListener.onLoginSuccess(userId);
-                    }
                     dispose(); // 로그인 성공 시 현재 창 닫기
-                    new TwitterMainPage(userId).setVisible(true);
+                    SwingUtilities.invokeLater(() -> new TwitterMainPage(userId).setVisible(true));
                 } else {
                     JOptionPane.showMessageDialog(LoginPage.this,
                             "Invalid User ID or Password. Please try again.",
@@ -142,13 +138,5 @@ public class LoginPage extends JFrame {
                 DatabaseConnection.closeConnection(con);
             }
         }
-    }
-
-    public void setLoginListener(LoginListener loginListener) {
-        this.loginListener = loginListener;
-    }
-
-    public interface LoginListener {
-        void onLoginSuccess(String userId);
     }
 }
