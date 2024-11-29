@@ -1,4 +1,4 @@
-package dialog;
+package panel;
 
 import config.DatabaseConnection;
 import dto.CommentDto;
@@ -8,7 +8,6 @@ import pages.TweetDetailPage;
 import pages.TwitterMainPage;
 import repository.CommentLikeRepository;
 import repository.CommentRepository;
-import repository.PostRepository;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

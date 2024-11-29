@@ -1,4 +1,4 @@
-package dialog;
+package panel;
 
 import config.DatabaseConnection;
 import dto.PostDto;
