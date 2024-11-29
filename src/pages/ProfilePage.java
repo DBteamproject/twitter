@@ -221,7 +221,15 @@ public class ProfilePage extends JPanel {
                     }
                     DatabaseConnection.closeConnection(con);
                     JOptionPane.showMessageDialog(listButtonPanel, "Member deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    mainPage.logoutAction();
+//                    mainPage.logoutAction();
+
+                    SwingUtilities.invokeLater(() -> {
+                        mainPage.dispose(); // 현재 TwitterMainPage 닫기
+                        LoginPage loginPage = new LoginPage(); // 새로운 로그인 페이지 열기
+                        loginPage.setLoginListener(newUserId -> {
+                            new TwitterMainPage(newUserId);
+                        });
+                    });
                 }
             }
         });

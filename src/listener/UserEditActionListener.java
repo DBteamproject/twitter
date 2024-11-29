@@ -1,8 +1,11 @@
 package listener;
 import config.DatabaseConnection;
 import dto.MemberDto;
+import dto.MemberSignUpDto;
 import dto.MemberUpdateDto;
+import pages.LoginPage;
 import pages.ProfilePage;
+import pages.SignUpPage;
 import pages.TwitterMainPage;
 import repository.CommentRepository;
 import repository.MemberRepository;
@@ -113,17 +116,22 @@ public class UserEditActionListener implements ActionListener {
                     }
                     String path = targetPath.toString();
 
-                    Connection con = DatabaseConnection.getConnection();
-                    MemberRepository memberRepository = new MemberRepository();
+                    Connection con = null;
                     try {
+                        con = DatabaseConnection.getConnection();
+                        MemberRepository memberRepository = new MemberRepository();
                         memberRepository.updateProfileImageUser(path, userId, con);
-                    } catch (SQLException ex) {
-                        throw new RuntimeException(ex);
+
+                        JOptionPane.showMessageDialog(dialog, "Profile image updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                        mainPage.showPage(new ProfilePage(mainPage, userId, userId));
+                        dialog.dispose();
+                    } catch (SQLException e2) {
+                        JOptionPane.showMessageDialog(dialog, e2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    } finally {
+                        if (con != null) {
+                            DatabaseConnection.closeConnection(con);
+                        }
                     }
-                    DatabaseConnection.closeConnection(con);
-                    JOptionPane.showMessageDialog(dialog, "Profile image updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    mainPage.showPage(new ProfilePage(mainPage, userId, userId));
-                    dialog.dispose();  // 다이얼로그 닫기
                 }
             }
         });
@@ -144,18 +152,22 @@ public class UserEditActionListener implements ActionListener {
                 String password = new String(passwordField.getPassword());
                 String introduce = introduceArea.getText();
 
-                Connection con = DatabaseConnection.getConnection();
-                MemberRepository memberRepository = new MemberRepository();
+                Connection con = null;
                 try {
+                    con = DatabaseConnection.getConnection();
+                    MemberRepository memberRepository = new MemberRepository();
                     memberRepository.updateUser(new MemberUpdateDto(password, userName, introduce), userId, con);
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
-                DatabaseConnection.closeConnection(con);
 
-                JOptionPane.showMessageDialog(dialog, "User updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                mainPage.showPage(new ProfilePage(mainPage, userId, userId));
-                dialog.dispose();  // 다이얼로그 닫기
+                    JOptionPane.showMessageDialog(dialog, "User updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    mainPage.showPage(new ProfilePage(mainPage, userId, userId));
+                    dialog.dispose();  // 다이얼로그 닫기
+                } catch (SQLException e2) {
+                    JOptionPane.showMessageDialog(dialog, e2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    if (con != null) {
+                        DatabaseConnection.closeConnection(con);
+                    }
+                }
             }
         });
 
