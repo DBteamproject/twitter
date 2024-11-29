@@ -49,7 +49,7 @@ public class FollowRepository {
     public List<MemberDto> getFollowers(Connection con, String userId) {
         List<MemberDto> followers = new ArrayList<>();
         String sql = "SELECT m.user_id, m.user_name, m.profile_image, m.introduce " +
-                "FROM follow f " +
+                "FROM follower f " +
                 "JOIN member m ON f.follower_id = m.user_id " +
                 "WHERE f.following_id = ?";
 
@@ -77,7 +77,7 @@ public class FollowRepository {
     public List<MemberDto> getFollowings(Connection con, String userId) {
         List<MemberDto> followings = new ArrayList<>();
         String sql = "SELECT m.user_id, m.user_name, m.profile_image, m.introduce " +
-                "FROM follow f " +
+                "FROM following f " +
                 "JOIN member m ON f.following_id = m.user_id " +
                 "WHERE f.follower_id = ?";
 
