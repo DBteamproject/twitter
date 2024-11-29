@@ -41,6 +41,28 @@ public class MemberRepository {
     }
 
     public void signUp(MemberSignUpDto dto, Connection con) throws SQLException {
+        // Step 1: User ID 중복 체크
+        String checkUserIdQuery = "SELECT COUNT(*) FROM user WHERE user_id = ?";
+        try (PreparedStatement stmt = con.prepareStatement(checkUserIdQuery)) {
+            stmt.setString(1, dto.getUserId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    throw new SQLException("User ID already exists.");
+                }
+            }
+        }
+
+        // Step 2: User Name 중복 체크
+        String checkUserNameQuery = "SELECT COUNT(*) FROM user WHERE user_name = ?";
+        try (PreparedStatement stmt = con.prepareStatement(checkUserNameQuery)) {
+            stmt.setString(1, dto.getUserName());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    throw new SQLException("User Name already exists.");
+                }
+            }
+        }
+
         String query = "INSERT INTO user (user_id, pwd, user_name, introduce, profile_image, followers_count, following_count, created_at) VALUES (?, ?, ?, ?, ?, 0, 0, ?)";
         try (PreparedStatement stmt = con.prepareStatement(query)) {
             stmt.setString(1, dto.getUserId());
@@ -105,6 +127,16 @@ public class MemberRepository {
         }
 
         if (dto.getUserName() != null && dto.getUserName().length() >= 2) {
+            String checkUserNameQuery = "SELECT COUNT(*) FROM user WHERE user_name = ? AND user_id != ?";
+            try (PreparedStatement stmt = con.prepareStatement(checkUserNameQuery)) {
+                stmt.setString(1, dto.getUserName());
+                stmt.setString(2, userId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        throw new SQLException("User Name already exists.");
+                    }
+                }
+            }
             queryBuilder.append("user_name = ?, ");
             needsUpdate = true;
         }
@@ -156,62 +188,56 @@ public class MemberRepository {
         con.setAutoCommit(false); // 자동 커밋 비활성화
 
         try {
-            // 사용자가 작성한 포스트 ID 목록을 가져오기
-            String postIdQuery = "SELECT post_id FROM posts WHERE writter_id = ?";
-            List<String> postIds = new ArrayList<>();
-
-            try (PreparedStatement stmt = con.prepareStatement(postIdQuery)) {
+            // 사용자가 작성한 포스트 좋아요 삭제
+            String deletePostLikesQuery = "DELETE FROM post_like WHERE liker_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(deletePostLikesQuery)) {
                 stmt.setString(1, userId);
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    postIds.add(rs.getString("post_id"));
-                }
-            }
-
-            // 사용자가 작성한 각 포스트에 대해 관련 데이터 삭제
-            for (String postId : postIds) {
-                // comment_like 테이블에서 관련 데이터 삭제
-                String deleteCommentLikesQuery = "DELETE FROM comment_like WHERE comment_id IN (SELECT comment_id FROM comment WHERE post_id = ?)";
-                try (PreparedStatement stmt = con.prepareStatement(deleteCommentLikesQuery)) {
-                    stmt.setString(1, postId);
-                    stmt.executeUpdate();
-                }
-
-                // comments 테이블에서 관련 데이터 삭제
-                String deleteCommentsQuery = "DELETE FROM comment WHERE post_id = ?";
-                try (PreparedStatement stmt = con.prepareStatement(deleteCommentsQuery)) {
-                    stmt.setString(1, postId);
-                    stmt.executeUpdate();
-                }
-
-                // post_like, post_photos, post_hashtags 테이블에서 관련 데이터 삭제
-                String[] tables = new String[]{"post_like", "post_photos", "post_hashtags"};
-                for (String table : tables) {
-                    String deleteQuery = "DELETE FROM " + table + " WHERE post_id = ?";
-                    try (PreparedStatement stmt = con.prepareStatement(deleteQuery)) {
-                        stmt.setString(1, postId);
-                        stmt.executeUpdate();
-                    }
-                }
-
-                // 마지막으로 posts 테이블에서 해당 포스트 삭제
-                String deletePostQuery = "DELETE FROM posts WHERE post_id = ?";
-                try (PreparedStatement stmt = con.prepareStatement(deletePostQuery)) {
-                    stmt.setString(1, postId);
-                    stmt.executeUpdate();
-                }
+                stmt.executeUpdate();
             }
 
             // 사용자가 작성한 댓글 좋아요 삭제
-            String deleteCommentLikesQuery = "DELETE FROM comment_like WHERE user_id = ?";
+            String deleteCommentLikesByUserQuery = "DELETE FROM comment_like WHERE liker_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(deleteCommentLikesByUserQuery)) {
+                stmt.setString(1, userId);
+                stmt.executeUpdate();
+            }
+
+            // 사용자가 작성한 댓글 삭제
+            String deleteCommentsByUserQuery = "DELETE FROM comment WHERE writter_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(deleteCommentsByUserQuery)) {
+                stmt.setString(1, userId);
+                stmt.executeUpdate();
+            }
+
+            // 사용자가 작성한 각 포스트에 대해 관련 데이터 삭제
+            // post_like, post_photos, post_hashtags 테이블에서 관련 데이터 삭제
+            String deletePostRelatedTablesQuery = "DELETE FROM %s WHERE post_id IN (SELECT post_id FROM posts WHERE writter_id = ?)";
+            String[] postRelatedTables = new String[]{"post_like", "post_photos", "post_hashtags"};
+            for (String table : postRelatedTables) {
+                String deleteQuery = String.format(deletePostRelatedTablesQuery, table);
+                try (PreparedStatement stmt = con.prepareStatement(deleteQuery)) {
+                    stmt.setString(1, userId);
+                    stmt.executeUpdate();
+                }
+            }
+
+            // 댓글에 관련된 comment_like 삭제
+            String deleteCommentLikesQuery = "DELETE FROM comment_like WHERE comment_id IN (SELECT comment_id FROM comment WHERE post_id IN (SELECT post_id FROM posts WHERE writter_id = ?))";
             try (PreparedStatement stmt = con.prepareStatement(deleteCommentLikesQuery)) {
                 stmt.setString(1, userId);
                 stmt.executeUpdate();
             }
 
-            // 사용자가 작성한 포스트 좋아요 삭제
-            String deletePostLikesQuery = "DELETE FROM post_like WHERE user_id = ?";
-            try (PreparedStatement stmt = con.prepareStatement(deletePostLikesQuery)) {
+            // 사용자가 작성한 댓글 삭제
+            String deleteCommentsQuery = "DELETE FROM comment WHERE post_id IN (SELECT post_id FROM posts WHERE writter_id = ?)";
+            try (PreparedStatement stmt = con.prepareStatement(deleteCommentsQuery)) {
+                stmt.setString(1, userId);
+                stmt.executeUpdate();
+            }
+
+            // 마지막으로 posts 테이블에서 해당 사용자가 작성한 포스트 삭제
+            String deletePostsQuery = "DELETE FROM posts WHERE writter_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(deletePostsQuery)) {
                 stmt.setString(1, userId);
                 stmt.executeUpdate();
             }
