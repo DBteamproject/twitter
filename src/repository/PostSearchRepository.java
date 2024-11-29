@@ -17,7 +17,7 @@ public class PostSearchRepository {
     /**
      * 모든 포스트 목록 가져오기
      */
-    public List<PostDto> searchPosts(Connection con, int scrollNum, String userId,String name, String content) {
+    public List<PostDto> searchPosts(Connection con, int scrollNum, String userId, String name, String content) {
         List<PostDto> posts = new ArrayList<>();
         String postQuery = "SELECT p.post_id, p.content, p.num_of_likes, p.num_of_views, p.num_of_comments, p.created_at, " +
                 "u.user_id, u.user_name, u.introduce, u.profile_image, u.followers_count, u.following_count, u.created_at as user_created_at, " +
@@ -57,7 +57,7 @@ public class PostSearchRepository {
                         rs.getInt("num_of_comments"),
                         rs.getBoolean("userLiked"),
                         member,
-                        getPostPhotos(con, rs.getString("post_id")),
+                        new PostPhotoRepository().getPostPhotos(con, rs.getString("post_id")),
                         rs.getObject("created_at", LocalDateTime.class)
                 ));
             }
@@ -65,24 +65,5 @@ public class PostSearchRepository {
             e.printStackTrace();
         }
         return posts;
-    }
-
-    private List<PostPhotoDto> getPostPhotos(Connection con, String postId) {
-        List<PostPhotoDto> photos = new ArrayList<>();
-        String photoQuery = "SELECT photo_id, path FROM post_photos WHERE post_id = ?";
-        try (PreparedStatement stmt = con.prepareStatement(photoQuery)) {
-            stmt.setString(1, postId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                PostPhotoDto photo = new PostPhotoDto(
-                        rs.getString("photo_id"),
-                        rs.getString("path")
-                );
-                photos.add(photo);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return photos;
     }
 }
