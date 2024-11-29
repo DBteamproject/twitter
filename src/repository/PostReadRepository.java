@@ -2,7 +2,6 @@ package repository;
 
 import dto.MemberDto;
 import dto.PostDto;
-import dto.PostPhotoDto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -52,7 +51,7 @@ public class PostReadRepository {
                         rs.getInt("num_of_comments"),
                         rs.getBoolean("userLiked"),
                         member,
-                        getPostPhotos(con, rs.getString("post_id")),
+                        new PostPhotoRepository().getPostPhotos(con, rs.getString("post_id")),
                         rs.getObject("created_at", LocalDateTime.class)
                 ));
             }
@@ -106,7 +105,7 @@ public class PostReadRepository {
                         rs.getInt("num_of_comments"),
                         rs.getBoolean("userLiked"), // '좋아요' 상태를 포스트 DTO에 추가
                         member,
-                        getPostPhotos(con, rs.getString("post_id")),
+                        new PostPhotoRepository().getPostPhotos(con, rs.getString("post_id")),
                         rs.getObject("created_at", LocalDateTime.class)
                 ));
             }
@@ -153,7 +152,7 @@ public class PostReadRepository {
                         rs.getInt("num_of_comments"),
                         rs.getBoolean("userLiked"),
                         member,
-                        getPostPhotos(con, rs.getString("post_id")),
+                        new PostPhotoRepository().getPostPhotos(con, rs.getString("post_id")),
                         rs.getObject("created_at", LocalDateTime.class)
                 );
             }
@@ -161,26 +160,5 @@ public class PostReadRepository {
             e.printStackTrace();
         }
         return null; // 포스트가 없을 경우 null 반환
-    }
-
-
-    // 포스트에 연결된 모든 사진을 조회하는 메서드
-    private List<PostPhotoDto> getPostPhotos(Connection con, String postId) {
-        List<PostPhotoDto> photos = new ArrayList<>();
-        String photoQuery = "SELECT photo_id, path FROM post_photos WHERE post_id = ?";
-        try (PreparedStatement stmt = con.prepareStatement(photoQuery)) {
-            stmt.setString(1, postId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                PostPhotoDto photo = new PostPhotoDto(
-                        rs.getString("photo_id"),
-                        rs.getString("path")
-                );
-                photos.add(photo);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return photos;
     }
 }
