@@ -3,6 +3,7 @@ package pages;
 import config.DatabaseConnection;
 import dto.PostDto;
 import panel.TweetDesignPanel;
+import repository.PostRankingRepository;
 import repository.PostReadRepository;
 import repository.PostRepository;
 import repository.PostSearchRepository;
@@ -13,9 +14,6 @@ import java.sql.Connection;
 import java.util.List;
 
 public class SearchPage extends JPanel {
-    private TwitterMainPage mainFrame;
-    private String userId;
-
     private JPanel tweetsPanel;
     private JScrollPane scrollPane;
     private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
@@ -23,12 +21,7 @@ public class SearchPage extends JPanel {
 
     private String searchword = "";
 
-    TwitterMainPage mainPage;
-
-    public SearchPage(TwitterMainPage mainFrame, String userId) {
-        this.mainFrame = mainFrame;
-        this.userId = userId;
-
+    public SearchPage(TwitterMainPage mainPage, String userId) {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
@@ -157,11 +150,18 @@ public class SearchPage extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void loadMoreTweets(TwitterMainPage mainPage, String userId,String keyword) {
+    private void loadMoreTweets(TwitterMainPage mainPage, String userId, String keyword) {
         if(tweetScrollStatus) {
             Connection con = DatabaseConnection.getConnection();
-            PostSearchRepository postSearchRepository = new PostSearchRepository();
-            List<PostDto> userPosts = postSearchRepository.searchPosts(con, tweetScrollNum, userId,keyword,keyword);
+
+            List<PostDto> userPosts;
+            if (keyword.equals("")) {
+                PostRankingRepository postRankingRepository = new PostRankingRepository();
+                userPosts = postRankingRepository.getAllPostsOrderByViews(con, tweetScrollNum, userId);
+            }else{
+                PostSearchRepository postSearchRepository = new PostSearchRepository();
+                userPosts = postSearchRepository.searchPosts(con, tweetScrollNum, userId,keyword,keyword);
+            }
             DatabaseConnection.closeConnection(con);
 
             if (userPosts.isEmpty()) {
