@@ -1,7 +1,7 @@
 package pages;
 
 import config.DatabaseConnection;
-import dialog.TweetDesignPanel;
+import panel.TweetDesignPanel;
 import dto.PostDto;
 import repository.PostReadRepository;
 

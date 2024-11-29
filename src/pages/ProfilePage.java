@@ -2,7 +2,7 @@ package pages;
 
 import config.DatabaseConnection;
 import dialog.FollowUserListDialog;
-import dialog.TweetDesignPanel;
+import panel.TweetDesignPanel;
 import dto.MemberDto;
 import dto.PostDto;
 import listener.UserEditActionListener;
@@ -13,7 +13,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.lang.reflect.Member;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;

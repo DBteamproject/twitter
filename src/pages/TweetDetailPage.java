@@ -1,8 +1,8 @@
 package pages;
 
 import config.DatabaseConnection;
-import dialog.CommentDesignPanel;
-import dialog.TweetDesignPanel;
+import panel.CommentDesignPanel;
+import panel.TweetDesignPanel;
 import dto.CommentDto;
 import dto.PostDto;
 import repository.*;
