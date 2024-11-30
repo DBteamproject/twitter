@@ -201,7 +201,6 @@ public class ProfilePage extends JPanel {
         followerListButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 예시 팔로잉 목록
                 List<MemberDto> followerList = followRepository.getFollowerList(con, userId);
                 FollowUserListDialog dialog = new FollowUserListDialog(
                         (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
@@ -217,12 +216,11 @@ public class ProfilePage extends JPanel {
         followingListButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 예시 팔로잉 목록
-                List<MemberDto> followerList = followRepository.getFollowingList(con, userId);
+                List<MemberDto> followingList = followRepository.getFollowingList(con, userId);
                 FollowUserListDialog dialog = new FollowUserListDialog(
                         (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
                         "Following List",
-                        followerList,
+                        followingList,
                         mainPage,
                         userId
                 );
