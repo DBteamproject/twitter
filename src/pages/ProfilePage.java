@@ -2,7 +2,9 @@ package pages;
 
 import config.DatabaseConnection;
 import dialog.FollowUserListDialog;
-import dialog.TweetDesignPanel;
+import dto.FollowingDto;
+import dto.PostLikeDto;
+import panel.TweetDesignPanel;
 import dto.MemberDto;
 import dto.PostDto;
 import listener.UserEditActionListener;
@@ -28,31 +30,15 @@ public class ProfilePage extends JPanel {
     private int tweetScrollNum = 1; // 현재 로드된 트윗의 인덱스
     private boolean tweetScrollStatus = true;
 
-    private JButton followButton;
-    private String loggedInUserId; // 로그인한 사용자 ID
-    private String profileUserId; // 현재 프로필의 사용자 ID
-    private FollowRepository followRepository;
-    private Connection con1; // DB 연결 객체
-
 
     public ProfilePage(TwitterMainPage mainPage, String searchUserId, String userId) {
         // DB에서 데이터 가져오기
         Connection con = DatabaseConnection.getConnection();
         MemberRepository memberRepository = new MemberRepository();
         MemberDto memberInfo = memberRepository.getMemberInfo(con, searchUserId);
-        FollowRepository followRepository = new FollowRepository();
-
-        // 팔로워 목록 가져오기
-        List<MemberDto> followers = followRepository.getFollowers(con, userId);
-
-        // 팔로잉 목록 가져오기
-        List<MemberDto> followings = followRepository.getFollowings(con, userId);
         DatabaseConnection.closeConnection(con);
 
-        this.con1 = con1;
-        this.loggedInUserId = loggedInUserId;
-        this.profileUserId = profileUserId;
-        followRepository = new FollowRepository();
+
 
         // 레이아웃 설정
         setLayout(new BorderLayout());
@@ -79,15 +65,15 @@ public class ProfilePage extends JPanel {
         JPanel usernamePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); // 가로로 배치, 간격 없음
         usernamePanel.setBackground(Color.LIGHT_GRAY);
         JLabel usernameLabel = new JLabel("<html><h2>" + memberInfo.getUserName() + "</h2></html>");
-        followButton = new JButton("Follow");
+        JButton followButton = new JButton("Follow");
         followButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                handleFollowAction();
-                System.out.println("Follow button clicked"); // 팔로우 기능 구현 필요
+                handleFollowAction(followButton, searchUserId, userId);
+                System.out.println("Follow button clicked");
             }
         });
-        updateFollowButton();
+
 
         usernamePanel.add(usernameLabel);
         usernamePanel.add(followButton);
@@ -154,33 +140,33 @@ public class ProfilePage extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void handleFollowAction() {
-        try {
-            if (followRepository.isFollowing(con1, loggedInUserId, profileUserId)) {
-                followRepository.removeFollow(con1, loggedInUserId, profileUserId);
-                JOptionPane.showMessageDialog(this, "언팔로우 했습니다!");
-            } else {
-                followRepository.addFollow(con1, loggedInUserId, profileUserId);
-                JOptionPane.showMessageDialog(this, "팔로우 했습니다!");
-            }
-            updateFollowButton();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "에러 발생: " + ex.getMessage());
-        }
-    }
+    private void handleFollowAction(JButton followButton, String searchUserId, String userId){
+        Connection con = DatabaseConnection.getConnection();
+        FollowRepository followRepository = new FollowRepository();
 
-    private void updateFollowButton() {
         try {
-            if (followRepository.isFollowing(con1, loggedInUserId, profileUserId)) {
+            FollowingDto followingDto = followRepository.updateFollow(con, userId, searchUserId);
+
+            boolean followStatus = false; // 기본값으로 팔로우 상태를 false로 가정
+
+            if (followingDto != null && followingDto.getStatus() != null) {
+                followStatus = followingDto.getStatus();
+            }
+
+            if (followStatus) {
                 followButton.setText("Unfollow");
             } else {
                 followButton.setText("Follow");
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.out.println("팔로우 오류 발생");
+            System.out.println("Error: " + ex.getMessage());
+            System.out.println("SQLState: " + ex.getSQLState());
+            System.out.println("ErrorCode: " + ex.getErrorCode());
         }
+        DatabaseConnection.closeConnection(con);
     }
+    
 
     private static JPanel getButtonJPanel(String searchUserId, String userId, MemberDto memberDto, TwitterMainPage mainPage) {
         Connection con = DatabaseConnection.getConnection();
@@ -213,13 +199,13 @@ public class ProfilePage extends JPanel {
         }
 
         followerListButton.addActionListener(new ActionListener() {
-
             @Override
             public void actionPerformed(ActionEvent e) {
-                List<MemberDto> followerList = followRepository.getFollowers(con, userId);
+                // 예시 팔로잉 목록
+                List<MemberDto> followerList = followRepository.getFollowerList(con, userId);
                 FollowUserListDialog dialog = new FollowUserListDialog(
                         (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
-                        "Follower List",
+                        "Following List",
                         followerList,
                         mainPage,
                         userId
@@ -229,19 +215,18 @@ public class ProfilePage extends JPanel {
         });
 
         followingListButton.addActionListener(new ActionListener() {
-            Connection con = DatabaseConnection.getConnection();
             @Override
             public void actionPerformed(ActionEvent e) {
-                List<MemberDto> followingList = followRepository.getFollowings(con, userId);
+                // 예시 팔로잉 목록
+                List<MemberDto> followerList = followRepository.getFollowingList(con, userId);
                 FollowUserListDialog dialog = new FollowUserListDialog(
                         (Frame) SwingUtilities.getWindowAncestor(listButtonPanel),
                         "Following List",
-                        followingList,
+                        followerList,
                         mainPage,
                         userId
                 );
                 dialog.setVisible(true);
-
             }
         });
 

@@ -1,6 +1,9 @@
 package repository;
 
+import dto.FollowingDto;
 import dto.MemberDto;
+
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,61 +11,111 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class FollowRepository {
+    public FollowingDto updateFollow(Connection con, String userId, String followingId) throws SQLException {
 
-    // 팔로우 추가
-    public void addFollow(Connection con, String followerId, String followingId) throws SQLException {
-        String followQuery = "INSERT INTO twitter_following (follower_id, following_id, created_at) VALUES (?, ?, NOW())";
-        try (PreparedStatement pstmt = con.prepareStatement(followQuery)) {
-            pstmt.setString(1, followerId);
-            pstmt.setString(2, followingId);
-            pstmt.executeUpdate();
+        // 팔로우 상태 확인
+        String checkQuery = "SELECT f_id FROM following WHERE user_id = ? AND follower_id = ?";
+        boolean isFollowing = false;
+        try (PreparedStatement stmt = con.prepareStatement(checkQuery)) {
+            stmt.setString(1, userId);
+            stmt.setString(2, followingId);
+            ResultSet rs = stmt.executeQuery();
+            isFollowing = rs.next();
         }
-    }
 
-    // 팔로우 삭제 (언팔로우)
-    public void removeFollow(Connection con, String followerId, String followingId) throws SQLException {
-        String unfollowQuery = "DELETE FROM twitter_following WHERE follower_id = ? AND following_id = ?";
-        try (PreparedStatement pstmt = con.prepareStatement(unfollowQuery)) {
-            pstmt.setString(1, followerId);
-            pstmt.setString(2, followingId);
-            pstmt.executeUpdate();
+        if (isFollowing) {
+            // 팔로우 삭제 (언팔로우)
+            String unfollowingQuery = "DELETE FROM following WHERE follower_id = ? AND user_id = ?";
+            try (PreparedStatement pstmt = con.prepareStatement(unfollowingQuery)) {
+                pstmt.setString(1, followingId);
+                pstmt.setString(2, userId);
+                pstmt.executeUpdate();
+                System.out.println("Unfollowing successfully.");
+            }
+            String unfollowedQuery = "DELETE FROM follower WHERE follower_id = ? AND user_id = ?";
+            try (PreparedStatement pstmt = con.prepareStatement(unfollowedQuery)) {
+                pstmt.setString(1, userId);
+                pstmt.setString(2, followingId);
+                pstmt.executeUpdate();
+                System.out.println("Unfollowed successfully.");
+            }
+            String decreaseFollowingQuery = "UPDATE user SET following_count = following_count - 1 WHERE user_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(decreaseFollowingQuery)) {
+                stmt.setString(1, userId);
+                stmt.executeUpdate();
+            }
+            String decreaseFollowedQuery = "UPDATE user SET followers_count = followers_count - 1 WHERE user_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(decreaseFollowedQuery)) {
+                stmt.setString(1, followingId);
+                stmt.executeUpdate();
+            }
+        } else {
+            // 팔로우 추가
+            String fId = UUID.randomUUID().toString().substring(0, 8);
+
+            String followQuery = "INSERT INTO following (f_id, user_id, follower_id) VALUES (?, ?, ?)";
+            try (PreparedStatement pstmt = con.prepareStatement(followQuery)) {
+                pstmt.setString(1, fId);
+                pstmt.setString(2, userId);
+                pstmt.setString(3, followingId);
+                pstmt.executeUpdate();
+                System.out.println("Following successfully.");
+            }
+            String followedQuery = "INSERT INTO follower (f_id, user_id, follower_id) VALUES (?, ?, ?)";
+            try (PreparedStatement pstmt = con.prepareStatement(followedQuery)) {
+                pstmt.setString(1, fId);
+                pstmt.setString(2, followingId);
+                pstmt.setString(3, userId);
+                pstmt.executeUpdate();
+                System.out.println("Followed successfully.");
+            }
+
+            // 팔로잉 수 증가
+            String increaseFollowingQuery = "UPDATE user SET following_count = following_count + 1 WHERE user_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(increaseFollowingQuery)) {
+                stmt.setString(1, userId);
+                stmt.executeUpdate();
+            }
+            String increaseFollowedQuery = "UPDATE user SET followers_count = followers_count + 1 WHERE user_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(increaseFollowedQuery)) {
+                stmt.setString(1, followingId);
+                stmt.executeUpdate();
+            }
+            // 팔로잉 수 조회
+
         }
-    }
-
-    // 팔로우 상태 확인
-    public boolean isFollowing(Connection con, String followerId, String followingId) throws SQLException {
-        String checkQuery = "SELECT COUNT(*) FROM twitter_following WHERE follower_id = ? AND following_id = ?";
-        try (PreparedStatement pstmt = con.prepareStatement(checkQuery)) {
-            pstmt.setString(1, followerId);
-            pstmt.setString(2, followingId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
+        String followingCountQuery = "SELECT following_count FROM user WHERE user_id = ?";
+        int numfollowing = 0;
+        try (PreparedStatement stmt = con.prepareStatement(followingCountQuery)) {
+            stmt.setString(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                numfollowing = rs.getInt("following_count");
             }
         }
-        return false;
+
+        return new FollowingDto(!isFollowing, numfollowing);
     }
 
-    public List<MemberDto> getFollowers(Connection con, String userId) {
-        List<MemberDto> followers = new ArrayList<>();
-        String sql = "SELECT m.user_id, m.user_name, m.profile_image, m.introduce " +
-                "FROM follower f " +
-                "JOIN member m ON f.follower_id = m.user_id " +
-                "WHERE f.following_id = ?";
 
+    public List<MemberDto> getFollowerList(Connection con,String userId) {
+        List<MemberDto> followerList = new ArrayList<>();
+        String sql = "SELECT u.user_id, u.user_name " +
+                "FROM follower f " +
+                "JOIN user u ON f.follower_id = u.user_id " +
+                "WHERE f.user_id = ?";
         try (PreparedStatement pstmt = con.prepareStatement(sql)) {
-            pstmt.setString(1, userId);
+            pstmt.setString(1, userId); // userId를 쿼리에 바인딩
             try (ResultSet rs = pstmt.executeQuery()) {
+
                 while (rs.next()) {
                     MemberDto member = new MemberDto();
                     member.setUserId(rs.getString("user_id"));
-                    member.setUserName(rs.getString("user_name"));
-                    member.setProfileImage(rs.getString("profile_image"));
-                    member.setIntroduce(rs.getString("introduce"));
-                    followers.add(member);
+                    member.setUserName(rs.getString("user_name")); // user_name 설정
+                    followerList.add(member);
                 }
             }
         } catch (SQLException e) {
@@ -70,15 +123,13 @@ public class FollowRepository {
             e.printStackTrace();
             throw new RuntimeException("팔로워 목록을 가져오는 중 오류 발생", e);
         }
-        return followers;
-    }
+        return followerList;}
 
-
-    public List<MemberDto> getFollowings(Connection con, String userId) {
-        List<MemberDto> followings = new ArrayList<>();
-        String sql = "SELECT m.user_id, m.user_name, m.profile_image, m.introduce " +
-                "FROM following f " +
-                "JOIN member m ON f.following_id = m.user_id " +
+    public List<MemberDto> getFollowingList(Connection con, String userId) {
+        List<MemberDto> followingList = new ArrayList<>();
+        String sql = "SELECT u.user_id, u.user_name " +
+                "FROM follower f " +
+                "JOIN user u ON f.user_id = u.user_id " +
                 "WHERE f.follower_id = ?";
 
         try (PreparedStatement pstmt = con.prepareStatement(sql)) {
@@ -88,9 +139,7 @@ public class FollowRepository {
                     MemberDto member = new MemberDto();
                     member.setUserId(rs.getString("user_id"));
                     member.setUserName(rs.getString("user_name"));
-                    member.setProfileImage(rs.getString("profile_image"));
-                    member.setIntroduce(rs.getString("introduce"));
-                    followings.add(member);
+                    followingList.add(member);
                 }
             }
         } catch (SQLException e) {
@@ -98,7 +147,7 @@ public class FollowRepository {
             e.printStackTrace();
             throw new RuntimeException("팔로잉 목록을 가져오는 중 오류 발생", e);
         }
-        return followings;
+        return followingList;
     }
 
 }
