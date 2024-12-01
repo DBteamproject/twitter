@@ -258,6 +258,13 @@ public class MemberRepository {
                 stmt.executeUpdate();
             }
 
+            String deleteNotificationQuery = "DELETE FROM notifications WHERE user_id = ? OR from_user_id = ?";
+            try (PreparedStatement stmt = con.prepareStatement(deleteNotificationQuery)) {
+                stmt.setString(1, userId);
+                stmt.setString(2, userId);
+                stmt.executeUpdate();
+            }
+
             // 마지막으로 사용자 테이블에서 사용자 삭제
             String deleteUserQuery = "DELETE FROM user WHERE user_id = ?";
             try (PreparedStatement stmt = con.prepareStatement(deleteUserQuery)) {
