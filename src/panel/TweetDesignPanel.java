@@ -115,7 +115,7 @@ public class TweetDesignPanel {
         reactionPanel.setBackground(Color.WHITE);
 
         reactionPanel.add(createReactionLabel("💬", postDto.getNumComments())); // 댓글 수
-        reactionPanel.add(createLikeButton(postDto.getUserLiked(), postDto.getNumLikes(), postDto.getPostId(), userId)); // 좋아요 수
+        reactionPanel.add(createLikeButton(postDto.getUserLiked(), postDto.getNumLikes(), postDto.getPostId(), postDto.getMember().getUserId(), userId)); // 좋아요 수
         reactionPanel.add(createReactionLabel("Views", postDto.getNumViews())); // 조회수
 
         // 삭제 버튼 추가
@@ -207,7 +207,7 @@ public class TweetDesignPanel {
         return label;
     }
 
-    private JButton createLikeButton(boolean userLiked, int count, String postId, String userId) {
+    private JButton createLikeButton(boolean userLiked, int count, String postId, String postUserId, String userId) {
         // 아이콘 경로 설정
         String iconPath = userLiked ? "src/resources/like_on.png" : "src/resources/like_off.png";
         ImageIcon icon = new ImageIcon(iconPath);
@@ -229,7 +229,7 @@ public class TweetDesignPanel {
             Connection con = DatabaseConnection.getConnection();
             PostLikeRepository postLikeRepository = new PostLikeRepository();
             try {
-                PostLikeDto postLikeDto = postLikeRepository.updateLike(con, postId, userId);
+                PostLikeDto postLikeDto = postLikeRepository.updateLike(con, postUserId, postId, userId);
 
                 String newIconPath = postLikeDto.getStatus() ? "src/resources/like_on.png" : "src/resources/like_off.png";
                 ImageIcon newIcon = new ImageIcon(newIconPath);

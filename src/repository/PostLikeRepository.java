@@ -1,5 +1,6 @@
 package repository;
 
+import dto.MemberDto;
 import dto.PostLikeDto;
 
 import java.sql.Connection;
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 
 public class PostLikeRepository {
-    public PostLikeDto updateLike(Connection con, String postId, String userId) throws SQLException {
+    public PostLikeDto updateLike(Connection con, String postUserId, String postId, String userId) throws SQLException {
         // 좋아요 상태 확인
         String checkQuery = "SELECT l_id FROM post_like WHERE post_id = ? AND liker_id = ?";
         boolean isLiked = false;
@@ -54,6 +55,13 @@ public class PostLikeRepository {
             try (PreparedStatement stmt = con.prepareStatement(increaseLikesQuery)) {
                 stmt.setString(1, postId);
                 stmt.executeUpdate();
+            }
+
+            // Notification
+            if(!postUserId.equals(userId)){
+                MemberDto memberInfo = new MemberRepository().getMemberInfo(con, userId);
+                String notificationMessage = memberInfo.getUserName() + " (@" + memberInfo.getUserId() + ") has liked my post.";
+                new NotificationRepository().addNotification(postUserId, userId, notificationMessage);
             }
         }
 
