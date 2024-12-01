@@ -152,4 +152,23 @@ public class FollowRepository {
         return followings;
     }
 
+
+    public List<String> getFollowerIds(Connection con, String userId) {
+        List<String> followerIds = new ArrayList<>();
+        String sql = "SELECT follower_id FROM follower WHERE user_id = ?";
+        try (PreparedStatement pstmt = con.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    followerIds.add(rs.getString("follower_id"));
+                }
+            }
+        } catch (SQLException e) {
+            // Log and rethrow or handle the exception appropriately
+            e.printStackTrace();
+            throw new RuntimeException("Error retrieving follower IDs", e);
+        }
+        return followerIds;
+    }
+
 }
