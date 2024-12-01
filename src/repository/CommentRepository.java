@@ -1,11 +1,13 @@
 package repository;
 
+import dto.MemberDto;
+
 import java.sql.*;
 import java.util.Date;
 import java.util.UUID;
 
 public class CommentRepository {
-    public void writeComment(Connection con, String postId, String content, String userId) throws SQLException {
+    public void writeComment(Connection con, String postUserId, String postId, String content, String userId) throws SQLException {
         String commentId = UUID.randomUUID().toString().substring(0, 8);
 
         String insertCommentQuery = "INSERT INTO comment (comment_id, content, writter_id, post_id, num_of_likes, created_at) VALUES (?, ?, ?, ?, 0, ?)";
@@ -41,6 +43,14 @@ public class CommentRepository {
 
             // 커밋 트랜잭션
             con.commit();
+
+            // Notification
+            if(!userId.equals(postUserId)){
+                MemberDto memberInfo = new MemberRepository().getMemberInfo(con, userId);
+                String truncatedContent = content.length() > 6 ? content.substring(0, 6) + "..." : content;
+                String notificationMessage = memberInfo.getUserName() + " (@" + memberInfo.getUserId() + ") has add new comment.\n(" + truncatedContent + ")";
+                new NotificationRepository().addNotification(postUserId, userId, notificationMessage);
+            }
         } catch (SQLException e) {
             // 롤백 트랜잭션
             con.rollback();

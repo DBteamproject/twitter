@@ -91,7 +91,7 @@ public class CommentDesignPanel {
             CommentLikeRepository commentLikeRepository = new CommentLikeRepository();
             try {
                 Connection con = DatabaseConnection.getConnection();
-                CommentLikeDto commentLikeDto = commentLikeRepository.updateLike(con, comment.getCommentId(), userId);
+                CommentLikeDto commentLikeDto = commentLikeRepository.updateLike(con, comment.getMember().getUserId(), comment.getCommentId(), userId);
 
                 likeButton.setText("Like (" + commentLikeDto.getCount() + ")");
                 // 좋아요 상태에 따른 버튼 텍스트와 색상 변경
