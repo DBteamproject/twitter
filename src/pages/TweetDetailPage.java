@@ -89,7 +89,7 @@ public class TweetDetailPage extends JPanel {
                 Connection con2 = DatabaseConnection.getConnection();
                 CommentRepository commentRepository = new CommentRepository();
                 try {
-                    commentRepository.writeComment(con2, postId, newCommentContent, userId);
+                    commentRepository.writeComment(con2, postDto.getMember().getUserId(), postId, newCommentContent, userId);
                     mainPage.showPage(new TweetDetailPage(mainPage, postId, userId));
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);

@@ -1,6 +1,7 @@
 package repository;
 
 import dto.CommentLikeDto;
+import dto.MemberDto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,7 +11,7 @@ import java.util.UUID;
 
 
 public class CommentLikeRepository {
-    public CommentLikeDto updateLike(Connection con, String commentId, String userId) throws SQLException {
+    public CommentLikeDto updateLike(Connection con, String commentUserId, String commentId, String userId) throws SQLException {
         // 좋아요 상태 확인
         String checkQuery = "SELECT l_id FROM comment_like WHERE comment_id = ? AND liker_id = ?";
         boolean isLiked = false;
@@ -54,6 +55,12 @@ public class CommentLikeRepository {
             try (PreparedStatement stmt = con.prepareStatement(increaseLikesQuery)) {
                 stmt.setString(1, commentId);
                 stmt.executeUpdate();
+            }
+
+            if(!commentUserId.equals(userId)){
+                MemberDto memberInfo = new MemberRepository().getMemberInfo(con, userId);
+                String notificationMessage = memberInfo.getUserName() + " (@" + memberInfo.getUserId() + ") has liked my comment.";
+                new NotificationRepository().addNotification(commentUserId, userId, notificationMessage);
             }
         }
 
