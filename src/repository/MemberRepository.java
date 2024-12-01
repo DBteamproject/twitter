@@ -7,9 +7,7 @@ import dto.MemberUpdateDto;
 
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 
 public class MemberRepository {
