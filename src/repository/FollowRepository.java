@@ -32,6 +32,11 @@ public class FollowRepository {
 
         // Increment followers_count for followId and following_count for userId
         updateCounts(con, followingId, followerId, 1);
+
+        // Notification
+        MemberDto memberInfo = new MemberRepository().getMemberInfo(con, followerId);
+        String notificationMessage = memberInfo.getUserName() + " (@" + memberInfo.getUserId() + ") has followed me.";
+        new NotificationRepository().addNotification(followingId, followerId, notificationMessage);
     }
 
     // 팔로우 삭제 (언팔로우)
