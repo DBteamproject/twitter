@@ -1,5 +1,7 @@
 package repository;
 
+import dto.MemberDto;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +44,16 @@ public class PostRepository {
         for (String tag : tags) {
             int hashtagId = getOrCreateHashtagId(con, tag);
             addPostHashtag(con, postId, hashtagId);
+        }
+
+        // 나를 팔로우하고 있는 사람들에게 알림 보내기
+        FollowRepository followRepository = new FollowRepository();
+        List<String> followerIds = followRepository.getFollowerIds(con, userId);
+        for (String followerId : followerIds) {
+            MemberDto memberInfo = new MemberRepository().getMemberInfo(con, userId);
+            String truncatedContent = content.length() > 6 ? content.substring(0, 6) + "..." : content;
+            String notificationMessage = memberInfo.getUserName() + " (@" + memberInfo.getUserId() + ") has posted a new item.\n(" + truncatedContent + ")";
+            new NotificationRepository().addNotification(followerId, userId, notificationMessage);
         }
     }
 
